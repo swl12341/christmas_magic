@@ -1,38 +1,90 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magical Christmas Tree Deluxe</title>
+    <title>魔法圣诞树 - 豪华版</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
     
     <style>
-        /* --- UI/UX Styles (Unchanged) --- */
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: radial-gradient(circle at center, #1f101b 0%, #000000 100%); font-family: 'Cinzel', serif; user-select: none; }
+        /* --- UI/UX Styles (基础样式) --- */
+        /* 增加了中文常用字体适配 */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: radial-gradient(circle at center, #1f101b 0%, #000000 100%); font-family: 'Cinzel', 'Microsoft YaHei', 'PingFang SC', serif; user-select: none; }
         #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
-        #header { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 10; pointer-events: none; }
-        #header h1 { font-family: 'Great Vibes', cursive; font-size: 5rem; color: #ffdae0; margin: 0; text-shadow: 0 0 20px #ffdae0, 0 0 40px #ff69b4; animation: pulseGlow 3s infinite alternate; }
+        
+        #header { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 10; pointer-events: none; transition: all 0.3s ease; }
+        /* 标题仍保留艺术字体，也可以改中文，但Great Vibes不支持中文，所以此处保留英文或用系统字体 */
+        #header h1 { font-family: 'Great Vibes', cursive; font-size: 5rem; color: #ffdae0; margin: 0; text-shadow: 0 0 20px #ffdae0, 0 0 40px #ff69b4; animation: pulseGlow 3s infinite alternate; transition: font-size 0.3s ease; }
         @keyframes pulseGlow { from { text-shadow: 0 0 10px #ffdae0, 0 0 20px #ff69b4; opacity: 0.9; } to { text-shadow: 0 0 30px #ffdae0, 0 0 60px #ff69b4; opacity: 1; } }
-        #webcam-wrapper { position: absolute; bottom: 20px; left: 20px; width: 200px; height: 150px; border: 2px solid rgba(255, 105, 180, 0.5); border-radius: 10px; overflow: hidden; z-index: 10; background: rgba(0, 0, 0, 0.5); box-shadow: 0 0 15px rgba(255, 105, 180, 0.3); }
+        
+        #webcam-wrapper { position: absolute; bottom: 20px; left: 20px; width: 200px; height: 150px; border: 2px solid rgba(255, 105, 180, 0.5); border-radius: 10px; overflow: hidden; z-index: 10; background: rgba(0, 0, 0, 0.5); box-shadow: 0 0 15px rgba(255, 105, 180, 0.3); transition: all 0.3s ease; }
         #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        #gesture-label { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(255, 105, 180, 0.8); color: #fff; text-align: center; font-family: 'Cinzel', serif; font-size: 14px; font-weight: bold; padding: 5px 0; backdrop-filter: blur(2px); }
-        #gesture-sidebar { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 240px; background: rgba(20, 10, 20, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 15px; padding: 20px; z-index: 10; color: #fff; }
+        #gesture-label { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(255, 105, 180, 0.8); color: #fff; text-align: center; font-size: 14px; font-weight: bold; padding: 5px 0; backdrop-filter: blur(2px); }
+        
+        #gesture-sidebar { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 240px; background: rgba(20, 10, 20, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 15px; padding: 20px; z-index: 10; color: #fff; transition: all 0.3s ease; }
         .gesture-item { display: flex; align-items: center; margin-bottom: 15px; opacity: 0.5; transition: all 0.3s; padding: 10px; border-radius: 8px; }
         .gesture-item.active { opacity: 1; background: rgba(255, 105, 180, 0.2); border-left: 4px solid #ff69b4; box-shadow: 0 0 10px rgba(255, 105, 180, 0.2); }
         .gesture-icon { font-size: 24px; margin-right: 15px; width: 30px; text-align: center; }
-        .gesture-text h3 { margin: 0; font-size: 14px; color: #ffdae0; }
-        .gesture-text p { margin: 2px 0 0; font-size: 11px; color: #ccc; }
-        #controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 10; align-items: center; }
-        .btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 12px 24px; border-radius: 30px; cursor: pointer; font-family: 'Cinzel', serif; font-weight: 700; transition: all 0.3s; backdrop-filter: blur(5px); display: flex; align-items: center; gap: 10px; outline: none; }
+        .gesture-text h3 { margin: 0; font-size: 16px; color: #ffdae0; font-weight: bold; }
+        .gesture-text p { margin: 2px 0 0; font-size: 12px; color: #ccc; }
+        
+        #controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 10; align-items: center; transition: all 0.3s ease; }
+        .btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 12px 24px; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: 700; transition: all 0.3s; backdrop-filter: blur(5px); display: flex; align-items: center; gap: 10px; outline: none; font-family: 'Microsoft YaHei', sans-serif; }
         .btn:hover { background: rgba(255, 105, 180, 0.3); border-color: #ff69b4; box-shadow: 0 0 15px rgba(255, 105, 180, 0.5); }
         .btn-circle { width: 50px; height: 50px; padding: 0; border-radius: 50%; justify-content: center; font-size: 20px; }
+        
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 1s ease; }
         .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,105,180,0.3); border-radius: 50%; border-top-color: #ff69b4; animation: spin 1s ease-in-out infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #loader p { color: #ffdae0; margin-top: 20px; letter-spacing: 2px; animation: pulse 1.5s infinite; }
+        #loader p { color: #ffdae0; margin-top: 20px; letter-spacing: 2px; animation: pulse 1.5s infinite; font-size: 14px; }
         #file-input { display: none; }
+
+        /* --- 📱 手机端适配 (Mobile Responsive Fix) --- */
+        @media (max-width: 768px) {
+            #header { top: 15px; }
+            #header h1 { font-size: 2.2rem; }
+
+            /* 侧边栏优化：更紧凑 */
+            #gesture-sidebar {
+                width: auto;
+                min-width: 120px;
+                padding: 10px;
+                right: 10px;
+                background: rgba(20, 10, 20, 0.6);
+            }
+            .gesture-item { padding: 6px; margin-bottom: 5px; }
+            .gesture-icon { font-size: 18px; margin-right: 8px; width: 20px; }
+            .gesture-text h3 { font-size: 12px; }
+            .gesture-text p { display: none; /* 手机端隐藏详细描述 */ }
+
+            #webcam-wrapper {
+                width: 100px;
+                height: 75px;
+                bottom: 90px;
+                left: 10px;
+                border-width: 1px;
+            }
+            #gesture-label { font-size: 10px; padding: 2px 0; }
+
+            #controls {
+                bottom: 20px;
+                width: 95%;
+                gap: 8px;
+            }
+            .btn {
+                padding: 8px 14px;
+                font-size: 12px;
+                white-space: nowrap;
+            }
+            .btn-circle {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+        }
     </style>
     
     <script type="importmap">
@@ -48,45 +100,44 @@
 
     <div id="loader">
         <div class="spinner"></div>
-        <p>Crafting Christmas...</p>
+        <p>正在布置圣诞场景...</p>
     </div>
 
     <div id="header">
-        <h1>Merry Christmas</h1>
-    </div>
+        <h1>Merry Christmas</h1> </div>
 
     <div id="webcam-wrapper">
         <video id="webcam" autoplay playsinline></video>
-        <div id="gesture-label">Detecting...</div>
+        <div id="gesture-label">检测中...</div>
     </div>
 
     <div id="gesture-sidebar">
         <div class="gesture-item active" id="gesture-fist">
             <div class="gesture-icon">✊</div>
             <div class="gesture-text">
-                <h3>Tree Mode</h3>
-                <p>Fist / Default</p>
+                <h3>圣诞树模式</h3>
+                <p>握拳 / 默认</p>
             </div>
         </div>
         <div class="gesture-item" id="gesture-open">
             <div class="gesture-icon">🖐</div>
             <div class="gesture-text">
-                <h3>Scatter</h3>
-                <p>Open Hand</p>
+                <h3>散开装饰</h3>
+                <p>张开手掌</p>
             </div>
         </div>
         <div class="gesture-item" id="gesture-pinch">
             <div class="gesture-icon">👌</div>
             <div class="gesture-text">
-                <h3>Focus Memory</h3>
-                <p>Pinch Thumb & Index</p>
+                <h3>聚焦照片</h3>
+                <p>捏合拇指与食指</p>
             </div>
         </div>
         <div class="gesture-item" id="gesture-victory">
             <div class="gesture-icon">✌️</div>
             <div class="gesture-text">
-                <h3>Next Photo</h3>
-                <p>Victory Sign</p>
+                <h3>切换照片</h3>
+                <p>比耶 (剪刀手)</p>
             </div>
         </div>
     </div>
@@ -94,7 +145,7 @@
     <div id="controls">
         <input type="file" id="file-input" accept="image/*" multiple>
         <button class="btn" id="btn-upload">
-            <span>📷</span> Upload Memories
+            <span>📷</span> 上传回忆照片
         </button>
         <button class="btn btn-circle" id="btn-music">
             <span>🎵</span>
@@ -110,7 +161,7 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { FilesetResolver, HandLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/vision_bundle.js';
 
-        // --- Global Variables ---
+        // --- 全局变量 ---
         let scene, camera, renderer, composer;
         let handLandmarker, video;
         let lastVideoTime = -1;
@@ -118,13 +169,12 @@
         let photos = [];
         let clock = new THREE.Clock();
         
-        // Fireworks variables
         let fireworks = [];
         let lastFireworkTime = 0;
-        let particleTexture; // For fireworks
-        let snowflakeTexture; // For falling snow
+        let particleTexture; 
+        let snowflakeTexture; 
 
-        // State
+        // 状态
         let currentGesture = 'None';
         let pinchTarget = null;
         let lastDetectedGesture = 'None';
@@ -138,7 +188,7 @@
         const TREE_BASE_Y = -14;
         const MAX_RADIUS = 11;
 
-        // --- 1. Audio System ---
+        // --- 1. 音频系统 ---
         class ChristmasSynth {
             constructor() {
                 this.ctx = null; this.isPlaying = false;
@@ -169,7 +219,7 @@
         }
         const audioSynth = new ChristmasSynth();
 
-        // --- Texture Generators ---
+        // --- 纹理生成 ---
         function getParticleTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 32; canvas.height = 32;
@@ -199,7 +249,7 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // --- Updated Firework Class: HIGH BRIGHTNESS ---
+        // --- 烟花类 ---
         class FireworkExplosion {
             constructor(scene, position, colorValue) {
                 this.scene = scene;
@@ -229,8 +279,6 @@
                         speed * Math.cos(phi)
                     ));
 
-                    // SUPER BRIGHT COLOR CALCULATION
-                    // Multiply RGB by 6.0 to force into HDR/Bloom territory
                     const variedColor = baseColor.clone().offsetHSL(0, 0, (Math.random()-0.5)*0.2);
                     colors[i * 3] = variedColor.r * 6.0; 
                     colors[i * 3 + 1] = variedColor.g * 6.0;
@@ -242,10 +290,10 @@
                 this.velocities = velocities;
 
                 this.material = new THREE.PointsMaterial({
-                    size: 1.0, // Slightly bigger for impact
-                    map: particleTexture, // Circular glow texture
+                    size: 1.0, 
+                    map: particleTexture, 
                     vertexColors: true,
-                    blending: THREE.AdditiveBlending, // Additive for light stacking
+                    blending: THREE.AdditiveBlending, 
                     transparent: true,
                     opacity: 1.0,
                     depthWrite: false,
@@ -280,7 +328,7 @@
             }
         }
 
-        // --- 2. Setup Three.js Scene ---
+        // --- 2. 初始化场景 ---
         function initScene() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
@@ -309,7 +357,7 @@
             window.addEventListener('resize', onWindowResize);
         }
 
-        // --- 3. Create Objects ---
+        // --- 3. 创建物体 ---
 
         function getScatterPos() {
             return new THREE.Vector3((Math.random()-0.5)*60, (Math.random()-0.5)*60, (Math.random()-0.5)*60);
@@ -454,7 +502,7 @@
             photos.push(mesh);
         }
 
-        // --- 4. Logic & Animation ---
+        // --- 4. 逻辑与动画 ---
 
         function isFingerExtended(hand, fingerIndices, wrist) {
             const tip = hand[fingerIndices[3]];
@@ -502,7 +550,15 @@
             else document.getElementById('gesture-fist').classList.add('active');
             
             const label = document.getElementById('gesture-label');
-            if(label) label.innerText = (gesture === 'None') ? 'Detecting...' : gesture.replace('_', ' ');
+            // --- 中文映射 ---
+            const gestureMap = {
+                'None': '检测手势中...',
+                'Fist': '圣诞树模式 (握拳)',
+                'Open_Palm': '散开装饰 (张手)',
+                'Pinch': '聚焦模式 (捏合)',
+                'Victory': '切换照片 (比耶)'
+            };
+            if(label) label.innerText = gestureMap[gesture] || gesture;
         }
 
         function animateInstancedMesh(mesh, time, dt, isScatter, spiralRotate) {
@@ -596,16 +652,13 @@
             snowSystem.geometry.attributes.position.needsUpdate = true;
         }
 
-        // --- UPDATED FIREWORKS LOGIC ---
         function tryLaunchFirework(time) {
-            // Lower frequency: Launch every 2 to 5 seconds
             if (time - lastFireworkTime > 2.0 + Math.random() * 3.0) {
                 lastFireworkTime = time;
-                // Random position anywhere in the background
                 const pos = new THREE.Vector3(
-                    (Math.random() - 0.5) * 120, // Wide X range
-                    Math.random() * 50 - 10,     // Random Height
-                    Math.random() * -100 - 10    // Deep Z range
+                    (Math.random() - 0.5) * 120, 
+                    Math.random() * 50 - 10,     
+                    Math.random() * -100 - 10    
                 );
                 const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xffffff];
                 const color = colors[Math.floor(Math.random() * colors.length)];
@@ -626,7 +679,6 @@
             animatePhotos(dt, time, isScatter, isPinch, isVictory);
             animateSnow();
 
-            // Fireworks Update
             tryLaunchFirework(time);
             for (let i = fireworks.length - 1; i >= 0; i--) {
                 fireworks[i].update(dt);
@@ -641,7 +693,7 @@
             composer.render();
         }
 
-        // --- 5. Setup & Event Listeners ---
+        // --- 5. 设置与事件 ---
         async function setupMediaPipe() {
             const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm");
             handLandmarker = await HandLandmarker.createFromOptions(vision, {
