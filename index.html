@@ -21,12 +21,13 @@
         #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         #gesture-label { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(255, 105, 180, 0.8); color: #fff; text-align: center; font-size: 14px; font-weight: bold; padding: 5px 0; backdrop-filter: blur(2px); }
         
-        #gesture-sidebar { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 240px; background: rgba(20, 10, 20, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 15px; padding: 20px; z-index: 10; color: #fff; transition: all 0.3s ease; }
-        .gesture-item { display: flex; align-items: center; margin-bottom: 15px; opacity: 0.5; transition: all 0.3s; padding: 10px; border-radius: 8px; }
-        .gesture-item.active { opacity: 1; background: rgba(255, 105, 180, 0.2); border-left: 4px solid #ff69b4; box-shadow: 0 0 10px rgba(255, 105, 180, 0.2); }
-        .gesture-icon { font-size: 24px; margin-right: 15px; width: 30px; text-align: center; }
-        .gesture-text h3 { margin: 0; font-size: 16px; color: #ffdae0; font-weight: bold; }
-        .gesture-text p { margin: 2px 0 0; font-size: 12px; color: #ccc; }
+        /* --- 侧边栏样式 (PC默认) --- */
+        #gesture-sidebar { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 200px; background: rgba(20, 10, 20, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 12px; padding: 15px; z-index: 10; color: #fff; transition: all 0.3s ease; }
+        .gesture-item { display: flex; align-items: center; margin-bottom: 10px; opacity: 0.5; transition: all 0.3s; padding: 8px; border-radius: 8px; }
+        .gesture-item.active { opacity: 1; background: rgba(255, 105, 180, 0.2); border-left: 3px solid #ff69b4; box-shadow: 0 0 10px rgba(255, 105, 180, 0.2); }
+        .gesture-icon { font-size: 20px; margin-right: 10px; width: 25px; text-align: center; }
+        .gesture-text h3 { margin: 0; font-size: 14px; color: #ffdae0; font-weight: bold; }
+        .gesture-text p { margin: 2px 0 0; font-size: 10px; color: #ccc; }
         
         #controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 10; align-items: center; transition: all 0.3s ease; }
         .btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 12px 24px; border-radius: 30px; cursor: pointer; font-size: 16px; font-weight: 700; transition: all 0.3s; backdrop-filter: blur(5px); display: flex; align-items: center; gap: 10px; outline: none; font-family: 'Microsoft YaHei', sans-serif; }
@@ -39,25 +40,38 @@
         #loader p { color: #ffdae0; margin-top: 20px; letter-spacing: 2px; animation: pulse 1.5s infinite; font-size: 14px; }
         #file-input { display: none; }
 
-        /* --- 📱 手机端适配 (更小巧的版本) --- */
+        /* --- 📱 手机端适配 (极致瘦身版) --- */
         @media (max-width: 768px) {
             #header { top: 15px; }
             #header h1 { font-size: 2.0rem; }
 
-            /* 右侧菜单：变得更紧凑 */
+            /* 右侧菜单：极小化 */
             #gesture-sidebar {
-                width: auto;
-                min-width: 100px;
-                padding: 8px;
+                width: auto; /* 宽度自适应 */
+                min-width: unset;
+                max-width: 120px;
+                padding: 6px 8px; /* 极小的内边距 */
                 right: 5px;
-                background: rgba(20, 10, 20, 0.6);
+                border-radius: 8px;
             }
-            .gesture-item { padding: 4px; margin-bottom: 4px; }
-            .gesture-icon { font-size: 16px; margin-right: 5px; width: 18px; }
-            .gesture-text h3 { font-size: 11px; }
-            .gesture-text p { display: none; }
+            .gesture-item { 
+                padding: 4px; 
+                margin-bottom: 3px; 
+            }
+            .gesture-icon { 
+                font-size: 14px; /* 图标更小 */
+                margin-right: 5px; 
+                width: 16px; 
+            }
+            .gesture-text h3 { 
+                font-size: 10px; /* 文字更小 */
+                white-space: nowrap;
+            }
+            .gesture-text p { 
+                display: none; /* 隐藏副标题 */
+            }
 
-            /* 左下角摄像头框：显著缩小 */
+            /* 左下角摄像头框：保持微型 */
             #webcam-wrapper {
                 width: 72px;  
                 height: 54px; 
@@ -483,29 +497,37 @@
         }
 
         function addPhoto(imgUrl) {
-            const texture = new THREE.TextureLoader().load(imgUrl);
-            texture.colorSpace = THREE.SRGBColorSpace; // 关键修复：使用sRGB颜色空间，还原图片真实色彩
-            
-            // 修复：改用纯白色(0xffffff)以保留原色，不再使用灰色(0xdddddd)滤镜
-            const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, color: 0xffffff });
-            
-            // 修复：减小几何体初始大小 (从3x4 改为 1.5x2)，防止图片显得过大
-            const geometry = new THREE.PlaneGeometry(1.5, 2); 
-            
-            const mesh = new THREE.Mesh(geometry, mat);
-            const normalizedH = Math.random() * 0.8 + 0.1; 
-            const h = normalizedH * TREE_HEIGHT;
-            const y = TREE_BASE_Y + h;
-            const loops = 10;
-            const angle = normalizedH * Math.PI * 2 * loops;
-            const taperFactor = 1.0 - normalizedH;
-            const r = (MAX_RADIUS + 1.0) * taperFactor; 
-            const x = Math.cos(angle) * r; const z = Math.sin(angle) * r;
-            mesh.position.set(x, y, z);
-            mesh.userData = { treePos: mesh.position.clone(), scatterPos: getScatterPos() };
-            mesh.lookAt(0, y, 0); mesh.rotateY(Math.PI); 
-            scene.add(mesh);
-            photos.push(mesh);
+            new THREE.TextureLoader().load(imgUrl, (texture) => {
+                // 关键修复1：设置正确的色彩空间
+                texture.colorSpace = THREE.SRGBColorSpace; 
+                
+                // 关键修复2：计算图片原始长宽比
+                const imgAspect = texture.image.width / texture.image.height;
+                
+                // 关键修复3：根据比例动态生成几何体
+                // 基础高度设为 3 (比之前大)，宽度根据比例自适应
+                const baseHeight = 3.0; 
+                const baseWidth = baseHeight * imgAspect;
+                const geometry = new THREE.PlaneGeometry(baseWidth, baseHeight);
+
+                const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, color: 0xffffff });
+                
+                const mesh = new THREE.Mesh(geometry, mat);
+                const normalizedH = Math.random() * 0.8 + 0.1; 
+                const h = normalizedH * TREE_HEIGHT;
+                const y = TREE_BASE_Y + h;
+                const loops = 10;
+                const angle = normalizedH * Math.PI * 2 * loops;
+                const taperFactor = 1.0 - normalizedH;
+                const r = (MAX_RADIUS + 1.0) * taperFactor; 
+                const x = Math.cos(angle) * r; const z = Math.sin(angle) * r;
+                
+                mesh.position.set(x, y, z);
+                mesh.userData = { treePos: mesh.position.clone(), scatterPos: getScatterPos() };
+                mesh.lookAt(0, y, 0); mesh.rotateY(Math.PI); 
+                scene.add(mesh);
+                photos.push(mesh);
+            });
         }
 
         // --- 4. 逻辑与动画 ---
@@ -629,14 +651,14 @@
                     const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
                     targetPos = camera.position.clone().add(camDir.multiplyScalar(12));
                     p.lookAt(camera.position); 
-                    // 修复：从之前的放大3倍(3,3,3)改为放大1.2倍(1.2, 1.2, 1.2)，防止占满全屏
-                    targetScale = new THREE.Vector3(1.2, 1.2, 1.2);
+                    // 关键修复4：聚焦时放大1.5倍 (配合基础尺寸变大，总大小显著增加)
+                    targetScale = new THREE.Vector3(1.5, 1.5, 1.5);
                 } else if (isVictory && index === activePhotoIndex) {
                     const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
                     targetPos = camera.position.clone().add(camDir.multiplyScalar(12));
                     p.lookAt(camera.position); 
-                    // 修复：同上
-                    targetScale = new THREE.Vector3(1.2, 1.2, 1.2);
+                    // 关键修复4：聚焦时放大1.5倍
+                    targetScale = new THREE.Vector3(1.5, 1.5, 1.5);
                 } else {
                     let baseTarget = isScatter ? p.userData.scatterPos : p.userData.treePos;
                     if (!isScatter) {
