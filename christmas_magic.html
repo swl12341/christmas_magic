@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magical Christmas Tree Deluxe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- UI/UX Styles (Unchanged) --- */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: radial-gradient(circle at center, #1f101b 0%, #000000 100%); font-family: 'Cinzel', serif; user-select: none; }
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        #header { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 10; pointer-events: none; }
+        #header h1 { font-family: 'Great Vibes', cursive; font-size: 5rem; color: #ffdae0; margin: 0; text-shadow: 0 0 20px #ffdae0, 0 0 40px #ff69b4; animation: pulseGlow 3s infinite alternate; }
+        @keyframes pulseGlow { from { text-shadow: 0 0 10px #ffdae0, 0 0 20px #ff69b4; opacity: 0.9; } to { text-shadow: 0 0 30px #ffdae0, 0 0 60px #ff69b4; opacity: 1; } }
+        #webcam-wrapper { position: absolute; bottom: 20px; left: 20px; width: 200px; height: 150px; border: 2px solid rgba(255, 105, 180, 0.5); border-radius: 10px; overflow: hidden; z-index: 10; background: rgba(0, 0, 0, 0.5); box-shadow: 0 0 15px rgba(255, 105, 180, 0.3); }
+        #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #gesture-label { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(255, 105, 180, 0.8); color: #fff; text-align: center; font-family: 'Cinzel', serif; font-size: 14px; font-weight: bold; padding: 5px 0; backdrop-filter: blur(2px); }
+        #gesture-sidebar { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 240px; background: rgba(20, 10, 20, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 15px; padding: 20px; z-index: 10; color: #fff; }
+        .gesture-item { display: flex; align-items: center; margin-bottom: 15px; opacity: 0.5; transition: all 0.3s; padding: 10px; border-radius: 8px; }
+        .gesture-item.active { opacity: 1; background: rgba(255, 105, 180, 0.2); border-left: 4px solid #ff69b4; box-shadow: 0 0 10px rgba(255, 105, 180, 0.2); }
+        .gesture-icon { font-size: 24px; margin-right: 15px; width: 30px; text-align: center; }
+        .gesture-text h3 { margin: 0; font-size: 14px; color: #ffdae0; }
+        .gesture-text p { margin: 2px 0 0; font-size: 11px; color: #ccc; }
+        #controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 10; align-items: center; }
+        .btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 12px 24px; border-radius: 30px; cursor: pointer; font-family: 'Cinzel', serif; font-weight: 700; transition: all 0.3s; backdrop-filter: blur(5px); display: flex; align-items: center; gap: 10px; outline: none; }
+        .btn:hover { background: rgba(255, 105, 180, 0.3); border-color: #ff69b4; box-shadow: 0 0 15px rgba(255, 105, 180, 0.5); }
+        .btn-circle { width: 50px; height: 50px; padding: 0; border-radius: 50%; justify-content: center; font-size: 20px; }
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 1s ease; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,105,180,0.3); border-radius: 50%; border-top-color: #ff69b4; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loader p { color: #ffdae0; margin-top: 20px; letter-spacing: 2px; animation: pulse 1.5s infinite; }
+        #file-input { display: none; }
+    </style>
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <p>Crafting Christmas...</p>
+    </div>
+
+    <div id="header">
+        <h1>Merry Christmas</h1>
+    </div>
+
+    <div id="webcam-wrapper">
+        <video id="webcam" autoplay playsinline></video>
+        <div id="gesture-label">Detecting...</div>
+    </div>
+
+    <div id="gesture-sidebar">
+        <div class="gesture-item active" id="gesture-fist">
+            <div class="gesture-icon">✊</div>
+            <div class="gesture-text">
+                <h3>Tree Mode</h3>
+                <p>Fist / Default</p>
+            </div>
+        </div>
+        <div class="gesture-item" id="gesture-open">
+            <div class="gesture-icon">🖐</div>
+            <div class="gesture-text">
+                <h3>Scatter</h3>
+                <p>Open Hand</p>
+            </div>
+        </div>
+        <div class="gesture-item" id="gesture-pinch">
+            <div class="gesture-icon">👌</div>
+            <div class="gesture-text">
+                <h3>Focus Memory</h3>
+                <p>Pinch Thumb & Index</p>
+            </div>
+        </div>
+        <div class="gesture-item" id="gesture-victory">
+            <div class="gesture-icon">✌️</div>
+            <div class="gesture-text">
+                <h3>Next Photo</h3>
+                <p>Victory Sign</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <input type="file" id="file-input" accept="image/*" multiple>
+        <button class="btn" id="btn-upload">
+            <span>📷</span> Upload Memories
+        </button>
+        <button class="btn btn-circle" id="btn-music">
+            <span>🎵</span>
+        </button>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { FilesetResolver, HandLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/vision_bundle.js';
+
+        // --- Global Variables ---
+        let scene, camera, renderer, composer;
+        let handLandmarker, video;
+        let lastVideoTime = -1;
+        let ornaments, foliage, starMesh, snowSystem; 
+        let photos = [];
+        let clock = new THREE.Clock();
+        
+        // Fireworks variables
+        let fireworks = [];
+        let lastFireworkTime = 0;
+        let particleTexture; // For fireworks
+        let snowflakeTexture; // For falling snow
+
+        // State
+        let currentGesture = 'None';
+        let pinchTarget = null;
+        let lastDetectedGesture = 'None';
+        let gestureFrameCount = 0;
+        const GESTURE_CONFIRM_FRAMES = 5; 
+        let activePhotoIndex = -1; 
+        let lastSwitchTime = 0;
+        const SWITCH_COOLDOWN = 1.5; 
+        
+        const TREE_HEIGHT = 28;
+        const TREE_BASE_Y = -14;
+        const MAX_RADIUS = 11;
+
+        // --- 1. Audio System ---
+        class ChristmasSynth {
+            constructor() {
+                this.ctx = null; this.isPlaying = false;
+                this.melody = [{n:'C4',d:0.5}, {n:'F4',d:0.5}, {n:'F4',d:0.25}, {n:'G4',d:0.25}, {n:'F4',d:0.5}, {n:'E4',d:0.5}, {n:'D4',d:0.5}, {n:'D4',d:0.5}, {n:'D4',d:0.5}, {n:'G4',d:0.5}, {n:'G4',d:0.25}, {n:'A4',d:0.25}, {n:'G4',d:0.5}, {n:'F4',d:0.5}, {n:'E4',d:0.5}, {n:'C4',d:0.5}, {n:'C4',d:0.5}, {n:'A4',d:0.5}, {n:'A4',d:0.25}, {n:'Bb4',d:0.25}, {n:'A4',d:0.5}, {n:'G4',d:0.5}, {n:'F4',d:0.5}, {n:'D4',d:0.5}, {n:'C4',d:0.5}, {n:'C4',d:0.5}, {n:'D4',d:0.5}, {n:'G4',d:0.5}, {n:'E4',d:0.5}, {n:'F4',d:1.0}];
+                this.noteIndex = 0; this.nextNoteTime = 0; this.tempo = 120;
+            }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            getFreq(note) { const notes = {'C4':261.63, 'D4':293.66, 'E4':329.63, 'F4':349.23, 'G4':392.00, 'A4':440.00, 'Bb4':466.16}; return notes[note] || 0; }
+            playNote(freq, time, dur) {
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(freq, time);
+                gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.3, time + 0.05); gain.gain.exponentialRampToValueAtTime(0.01, time + dur - 0.05);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(time); osc.stop(time + dur);
+            }
+            scheduler() {
+                if (!this.isPlaying) return;
+                while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+                    const note = this.melody[this.noteIndex % this.melody.length]; const dur = (note.d * 60) / this.tempo;
+                    if (this.ctx.state === 'running') this.playNote(this.getFreq(note.n), this.nextNoteTime, dur);
+                    this.nextNoteTime += dur; this.noteIndex++;
+                }
+                requestAnimationFrame(() => this.scheduler());
+            }
+            toggle() {
+                this.init(); if (this.ctx.state === 'suspended') this.ctx.resume();
+                this.isPlaying = !this.isPlaying; if (this.isPlaying) { this.nextNoteTime = this.ctx.currentTime + 0.1; this.scheduler(); return true; } return false;
+            }
+        }
+        const audioSynth = new ChristmasSynth();
+
+        // --- Texture Generators ---
+        function getParticleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            grad.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 32, 32);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function getSnowflakeTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.shadowBlur = 4; ctx.shadowColor = '#ffffff';
+            ctx.translate(16, 16);
+            for(let i=0; i<6; i++) {
+                ctx.save(); ctx.rotate(i * Math.PI / 3); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 12);
+                ctx.moveTo(0, 4); ctx.lineTo(3, 7); ctx.moveTo(0, 4); ctx.lineTo(-3, 7);
+                ctx.moveTo(0, 8); ctx.lineTo(3, 11); ctx.moveTo(0, 8); ctx.lineTo(-3, 11);
+                ctx.stroke(); ctx.restore();
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- Updated Firework Class: HIGH BRIGHTNESS ---
+        class FireworkExplosion {
+            constructor(scene, position, colorValue) {
+                this.scene = scene;
+                this.isDead = false;
+                this.age = 0;
+                this.lifespan = 2.5;
+
+                const particleCount = 100 + Math.floor(Math.random() * 80);
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const velocities = [];
+                const colors = new Float32Array(particleCount * 3);
+
+                const baseColor = new THREE.Color(colorValue);
+
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3] = position.x;
+                    positions[i * 3 + 1] = position.y;
+                    positions[i * 3 + 2] = position.z;
+
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos(Math.random() * 2 - 1);
+                    const speed = 10 + Math.random() * 20; 
+                    velocities.push(new THREE.Vector3(
+                        speed * Math.sin(phi) * Math.cos(theta),
+                        speed * Math.sin(phi) * Math.sin(theta),
+                        speed * Math.cos(phi)
+                    ));
+
+                    // SUPER BRIGHT COLOR CALCULATION
+                    // Multiply RGB by 6.0 to force into HDR/Bloom territory
+                    const variedColor = baseColor.clone().offsetHSL(0, 0, (Math.random()-0.5)*0.2);
+                    colors[i * 3] = variedColor.r * 6.0; 
+                    colors[i * 3 + 1] = variedColor.g * 6.0;
+                    colors[i * 3 + 2] = variedColor.b * 6.0;
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                this.velocities = velocities;
+
+                this.material = new THREE.PointsMaterial({
+                    size: 1.0, // Slightly bigger for impact
+                    map: particleTexture, // Circular glow texture
+                    vertexColors: true,
+                    blending: THREE.AdditiveBlending, // Additive for light stacking
+                    transparent: true,
+                    opacity: 1.0,
+                    depthWrite: false,
+                });
+
+                this.mesh = new THREE.Points(geometry, this.material);
+                scene.add(this.mesh);
+            }
+
+            update(dt) {
+                this.age += dt;
+                if (this.age >= this.lifespan) {
+                    this.isDead = true;
+                    this.scene.remove(this.mesh);
+                    this.mesh.geometry.dispose();
+                    this.mesh.material.dispose();
+                    return;
+                }
+
+                const positions = this.mesh.geometry.attributes.position.array;
+                const gravity = -5.0;
+
+                for (let i = 0; i < this.velocities.length; i++) {
+                    this.velocities[i].y += gravity * dt * 0.8;
+                    this.velocities[i].multiplyScalar(0.98); 
+                    positions[i * 3] += this.velocities[i].x * dt;
+                    positions[i * 3 + 1] += this.velocities[i].y * dt;
+                    positions[i * 3 + 2] += this.velocities[i].z * dt;
+                }
+                this.mesh.geometry.attributes.position.needsUpdate = true;
+                this.material.opacity = Math.pow(1.0 - (this.age / this.lifespan), 1.5);
+            }
+        }
+
+        // --- 2. Setup Three.js Scene ---
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x1f101b, 0.015);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000); 
+            camera.position.set(0, 8, 30);
+            camera.lookAt(0, 5, 0);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            renderer.toneMappingExposure = 0.9; 
+
+            container.appendChild(renderer.domElement);
+            
+            const renderScene = new RenderPass(scene, camera);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0.8; bloomPass.strength = 1.6; bloomPass.radius = 0.4;
+            
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene); composer.addPass(bloomPass);
+            
+            particleTexture = getParticleTexture();
+            snowflakeTexture = getSnowflakeTexture();
+            
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // --- 3. Create Objects ---
+
+        function getScatterPos() {
+            return new THREE.Vector3((Math.random()-0.5)*60, (Math.random()-0.5)*60, (Math.random()-0.5)*60);
+        }
+
+        function createStar() {
+            const starShape = new THREE.Shape();
+            const points = 5;
+            const outerRadius = 0.6; const innerRadius = 0.3;
+            for(let i=0; i<points*2; i++){
+                const r = (i%2 === 1) ? outerRadius : innerRadius;
+                const a = (i / (points*2)) * Math.PI * 2 - (Math.PI/2);
+                const x = Math.cos(a)*r; const y = Math.sin(a)*r;
+                if(i===0) starShape.moveTo(x,y); else starShape.lineTo(x,y);
+            }
+            starShape.closePath();
+            const extrudeSettings = { depth: 0.15, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2 };
+            const geo = new THREE.ExtrudeGeometry(starShape, extrudeSettings);
+            geo.center();
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xffff00, emissive: 0xffd700, emissiveIntensity: 3.0, roughness: 0.1, metalness: 1.0
+            });
+            starMesh = new THREE.Mesh(geo, mat);
+            starMesh.userData.treePos = new THREE.Vector3(0, TREE_BASE_Y + TREE_HEIGHT + 0.2, 0);
+            starMesh.userData.scatterPos = new THREE.Vector3(0, 30, 0); 
+            starMesh.position.copy(starMesh.userData.treePos);
+            scene.add(starMesh);
+            const starLight = new THREE.PointLight(0xffff00, 2, 20);
+            starMesh.add(starLight);
+        }
+
+        function createFoliage() {
+            const count = 4000;
+            const geo = new THREE.SphereGeometry(0.15, 4, 4); 
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0x228B22, emissive: 0x006400, emissiveIntensity: 0.8, roughness: 0.4
+            });
+            foliage = new THREE.InstancedMesh(geo, mat, count);
+            const dummy = new THREE.Object3D();
+            const colorBot = new THREE.Color(0x006400); const colorTop = new THREE.Color(0x32CD32); 
+            for (let i = 0; i < count; i++) {
+                const normalizedH = Math.random(); 
+                const h = normalizedH * TREE_HEIGHT;
+                const y = TREE_BASE_Y + h;
+                const taperFactor = 1.0 - normalizedH; 
+                const maxRAtHeight = MAX_RADIUS * taperFactor;
+                const r = maxRAtHeight * Math.sqrt(Math.random()); 
+                const angle = Math.random() * Math.PI * 2;
+                const x = Math.cos(angle) * r; const z = Math.sin(angle) * r;
+                const randomScale = Math.random() * 0.8 + 0.4;
+                dummy.position.set(x, y, z); dummy.scale.setScalar(randomScale);
+                dummy.rotation.set(Math.random(), Math.random(), Math.random());
+                dummy.updateMatrix();
+                foliage.setMatrixAt(i, dummy.matrix);
+                if(!foliage.userData.targets) foliage.userData.targets = [];
+                foliage.userData.targets.push(new THREE.Vector3(x, y, z));
+                if(!foliage.userData.scatter) foliage.userData.scatter = [];
+                foliage.userData.scatter.push(getScatterPos());
+                if(!foliage.userData.scales) foliage.userData.scales = [];
+                foliage.userData.scales.push(randomScale);
+                foliage.setColorAt(i, colorBot.clone().lerp(colorTop, normalizedH));
+            }
+            scene.add(foliage);
+        }
+
+        function createOrnaments() {
+            const count = 1500; 
+            const geo = new THREE.SphereGeometry(0.1, 8, 8); 
+            const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            ornaments = new THREE.InstancedMesh(geo, mat, count);
+            const dummy = new THREE.Object3D();
+            const colors = [new THREE.Color(3.0, 1.8, 0.0), new THREE.Color(2.0, 2.5, 3.0), new THREE.Color(3.0, 0.1, 0.1)];
+            for (let i = 0; i < count; i++) {
+                const normalizedH = i / count; 
+                const h = normalizedH * TREE_HEIGHT;
+                const y = TREE_BASE_Y + h;
+                const loops = 10; 
+                const baseAngle = normalizedH * Math.PI * 2 * loops; 
+                const taperFactor = 1.0 - normalizedH;
+                const rBase = (MAX_RADIUS + 0.5) * taperFactor; 
+                const spreadWidth = 0.8 * taperFactor; 
+                const randomR = (Math.random() - 0.5) * spreadWidth;
+                const r = Math.max(0.0, rBase + randomR);
+                const angle = baseAngle + (Math.random() - 0.5) * 0.2;
+                const x = Math.cos(angle) * r; const z = Math.sin(angle) * r;
+                const randomScale = Math.random() * 0.5 + 0.5; 
+                dummy.position.set(x, y, z); dummy.scale.setScalar(randomScale);
+                dummy.updateMatrix();
+                ornaments.setMatrixAt(i, dummy.matrix);
+                if(!ornaments.userData.scales) ornaments.userData.scales = [];
+                ornaments.userData.scales.push(randomScale);
+                if(!ornaments.userData.targets) ornaments.userData.targets = [];
+                ornaments.userData.targets.push(new THREE.Vector3(x, y, z));
+                if(!ornaments.userData.scatter) ornaments.userData.scatter = [];
+                ornaments.userData.scatter.push(getScatterPos());
+                const colorIndex = Math.floor(Math.random() * colors.length);
+                ornaments.setColorAt(i, colors[colorIndex]);
+            }
+            scene.add(ornaments);
+        }
+
+        function createSnow() {
+            const snowGeo = new THREE.BufferGeometry();
+            const snowCount = 1000;
+            const snowPos = [];
+            for(let i=0; i<snowCount; i++) {
+                snowPos.push((Math.random()-0.5)*70, Math.random()*50 - 20, (Math.random()-0.5)*70);
+            }
+            snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowPos, 3));
+            
+            const mat = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.6, 
+                map: snowflakeTexture,
+                transparent: true,
+                opacity: 0.8,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            snowSystem = new THREE.Points(snowGeo, mat);
+            scene.add(snowSystem);
+        }
+
+        function addPhoto(imgUrl) {
+            const texture = new THREE.TextureLoader().load(imgUrl);
+            const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, color: 0xdddddd });
+            const geometry = new THREE.PlaneGeometry(3, 4); 
+            const mesh = new THREE.Mesh(geometry, mat);
+            const normalizedH = Math.random() * 0.8 + 0.1; 
+            const h = normalizedH * TREE_HEIGHT;
+            const y = TREE_BASE_Y + h;
+            const loops = 10;
+            const angle = normalizedH * Math.PI * 2 * loops;
+            const taperFactor = 1.0 - normalizedH;
+            const r = (MAX_RADIUS + 1.0) * taperFactor; 
+            const x = Math.cos(angle) * r; const z = Math.sin(angle) * r;
+            mesh.position.set(x, y, z);
+            mesh.userData = { treePos: mesh.position.clone(), scatterPos: getScatterPos() };
+            mesh.lookAt(0, y, 0); mesh.rotateY(Math.PI); 
+            scene.add(mesh);
+            photos.push(mesh);
+        }
+
+        // --- 4. Logic & Animation ---
+
+        function isFingerExtended(hand, fingerIndices, wrist) {
+            const tip = hand[fingerIndices[3]];
+            const pip = hand[fingerIndices[1]];
+            const distTip = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
+            const distPip = Math.hypot(pip.x - wrist.x, pip.y - wrist.y);
+            return distTip > distPip;
+        }
+
+        function updateGestures(landmarks) {
+            if (!landmarks || landmarks.length === 0) { 
+                updateDebouncedGesture('None');
+                return; 
+            }
+            const hand = landmarks[0]; 
+            const wrist = hand[0];
+            const isIndexExt = isFingerExtended(hand, [5,6,7,8], wrist);
+            const isMiddleExt = isFingerExtended(hand, [9,10,11,12], wrist);
+            const isRingExt = isFingerExtended(hand, [13,14,15,16], wrist);
+            const isPinkyExt = isFingerExtended(hand, [17,18,19,20], wrist);
+            const pinchDist = Math.hypot(hand[4].x - hand[8].x, hand[4].y - hand[8].y);
+            
+            let detected = 'Fist';
+            if (pinchDist < 0.05) detected = 'Pinch';
+            else if (isIndexExt && isMiddleExt && !isRingExt && !isPinkyExt) detected = 'Victory';
+            else if (isIndexExt && isMiddleExt && isRingExt && isPinkyExt) detected = 'Open_Palm';
+            else detected = 'Fist';
+            updateDebouncedGesture(detected);
+        }
+
+        function updateDebouncedGesture(detected) {
+            if (detected === lastDetectedGesture) gestureFrameCount++;
+            else { gestureFrameCount = 0; lastDetectedGesture = detected; }
+            if (gestureFrameCount > GESTURE_CONFIRM_FRAMES) {
+                currentGesture = detected;
+                updateSidebarUI(currentGesture);
+            }
+        }
+
+        function updateSidebarUI(gesture) {
+            document.querySelectorAll('.gesture-item').forEach(el => el.classList.remove('active'));
+            if (gesture === 'Pinch') document.getElementById('gesture-pinch').classList.add('active');
+            else if (gesture === 'Open_Palm') document.getElementById('gesture-open').classList.add('active');
+            else if (gesture === 'Victory') document.getElementById('gesture-victory').classList.add('active');
+            else document.getElementById('gesture-fist').classList.add('active');
+            
+            const label = document.getElementById('gesture-label');
+            if(label) label.innerText = (gesture === 'None') ? 'Detecting...' : gesture.replace('_', ' ');
+        }
+
+        function animateInstancedMesh(mesh, time, dt, isScatter, spiralRotate) {
+            const dummy = new THREE.Object3D();
+            const lerpSpeed = 2.5 * dt;
+            for (let i = 0; i < mesh.count; i++) {
+                mesh.getMatrixAt(i, dummy.matrix);
+                dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+                let target = isScatter ? mesh.userData.scatter[i] : mesh.userData.targets[i];
+                if (!isScatter && spiralRotate) {
+                    const angleOffset = time * 0.2;
+                    const x = target.x * Math.cos(angleOffset) - target.z * Math.sin(angleOffset);
+                    const z = target.x * Math.sin(angleOffset) + target.z * Math.cos(angleOffset);
+                    target = new THREE.Vector3(x, target.y, z);
+                }
+                dummy.position.lerp(target, lerpSpeed);
+                const baseScale = mesh.userData.scales[i];
+                let pulse = 1.0;
+                if (spiralRotate) {
+                    const noise = Math.sin(time * 10 + i * 132.1); 
+                    pulse = (noise > 0.5) ? 1.5 : (noise < -0.5 ? 0.3 : 0.8);
+                } else {
+                    pulse = Math.sin(time * 2 + i) * 0.1 + 1.0; 
+                }
+                dummy.scale.setScalar(baseScale * pulse);
+                if(!spiralRotate) {
+                     dummy.rotation.x += Math.sin(time + i)*0.002;
+                     dummy.rotation.z += Math.cos(time + i)*0.002;
+                }
+                dummy.updateMatrix();
+                mesh.setMatrixAt(i, dummy.matrix);
+            }
+            mesh.instanceMatrix.needsUpdate = true;
+        }
+
+        function animateStar(time, dt, isScatter) {
+            starMesh.rotation.y += dt * 0.8;
+            const target = isScatter ? starMesh.userData.scatterPos : starMesh.userData.treePos;
+            starMesh.position.lerp(target, dt * 2);
+            starMesh.material.emissiveIntensity = 5.0 + Math.sin(time * 3) * 2.0;
+        }
+
+        function animatePhotos(dt, time, isScatter, isPinch, isVictory) {
+            const now = Date.now() / 1000;
+            if (isVictory && photos.length > 0) {
+                if (now - lastSwitchTime > SWITCH_COOLDOWN) {
+                    activePhotoIndex = (activePhotoIndex + 1) % photos.length;
+                    lastSwitchTime = now;
+                }
+            }
+            if (isPinch && !pinchTarget && photos.length > 0) {
+                let minAngle = Infinity; const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+                photos.forEach(p => {
+                    const angle = camDir.angleTo(p.position.clone().sub(camera.position).normalize());
+                    if (angle < minAngle) { minAngle = angle; pinchTarget = p; }
+                });
+            } else if (!isPinch) pinchTarget = null;
+
+            photos.forEach((p, index) => {
+                let targetPos, targetScale;
+                if (p === pinchTarget) {
+                    const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+                    targetPos = camera.position.clone().add(camDir.multiplyScalar(12));
+                    p.lookAt(camera.position); targetScale = new THREE.Vector3(3, 3, 3);
+                } else if (isVictory && index === activePhotoIndex) {
+                    const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+                    targetPos = camera.position.clone().add(camDir.multiplyScalar(12));
+                    p.lookAt(camera.position); targetScale = new THREE.Vector3(3, 3, 3);
+                } else {
+                    let baseTarget = isScatter ? p.userData.scatterPos : p.userData.treePos;
+                    if (!isScatter) {
+                        const angleOffset = time * 0.2; 
+                        const x = baseTarget.x * Math.cos(angleOffset) - baseTarget.z * Math.sin(angleOffset);
+                        const z = baseTarget.x * Math.sin(angleOffset) + baseTarget.z * Math.cos(angleOffset);
+                        targetPos = new THREE.Vector3(x, baseTarget.y, z);
+                        p.lookAt(0, p.position.y, 0); p.rotateY(Math.PI);
+                    } else { targetPos = baseTarget; p.rotation.z += dt * 0.1; p.rotation.x += dt * 0.1; }
+                    targetScale = new THREE.Vector3(0.2, 0.2, 0.2); 
+                }
+                p.position.lerp(targetPos, dt * 3); 
+                p.scale.lerp(targetScale, dt * 3);
+            });
+        }
+
+        function animateSnow() {
+            const pos = snowSystem.geometry.attributes.position.array;
+            for(let i=0; i<pos.length; i+=3) {
+                pos[i+1] -= 0.08; if(pos[i+1] < -25) pos[i+1] = 35; 
+                pos[i] += Math.sin(Date.now()*0.001 + pos[i+1])*0.03; 
+            }
+            snowSystem.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // --- UPDATED FIREWORKS LOGIC ---
+        function tryLaunchFirework(time) {
+            // Lower frequency: Launch every 2 to 5 seconds
+            if (time - lastFireworkTime > 2.0 + Math.random() * 3.0) {
+                lastFireworkTime = time;
+                // Random position anywhere in the background
+                const pos = new THREE.Vector3(
+                    (Math.random() - 0.5) * 120, // Wide X range
+                    Math.random() * 50 - 10,     // Random Height
+                    Math.random() * -100 - 10    // Deep Z range
+                );
+                const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xffffff];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                fireworks.push(new FireworkExplosion(scene, pos, color));
+            }
+        }
+
+        function render() {
+            requestAnimationFrame(render);
+            const dt = clock.getDelta(); const time = Date.now() * 0.001;
+            const isScatter = (currentGesture === 'Open_Palm');
+            const isPinch = (currentGesture === 'Pinch');
+            const isVictory = (currentGesture === 'Victory');
+
+            animateInstancedMesh(foliage, time, dt, isScatter, false); 
+            animateInstancedMesh(ornaments, time, dt, isScatter, true); 
+            animateStar(time, dt, isScatter);
+            animatePhotos(dt, time, isScatter, isPinch, isVictory);
+            animateSnow();
+
+            // Fireworks Update
+            tryLaunchFirework(time);
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                fireworks[i].update(dt);
+                if (fireworks[i].isDead) {
+                    fireworks.splice(i, 1);
+                }
+            }
+            
+            camera.position.x = Math.sin(time * 0.1) * 5;
+            camera.lookAt(0, 5, 0);
+
+            composer.render();
+        }
+
+        // --- 5. Setup & Event Listeners ---
+        async function setupMediaPipe() {
+            const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm");
+            handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" },
+                runningMode: "VIDEO", numHands: 1
+            });
+            startWebcam();
+        }
+        function startWebcam() {
+            video = document.getElementById("webcam");
+            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+                video.srcObject = stream; video.addEventListener("loadeddata", predictWebcam);
+                document.getElementById('loader').style.opacity = 0;
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 1000);
+            });
+        }
+        async function predictWebcam() {
+            let startTimeMs = performance.now();
+            if (lastVideoTime !== video.currentTime) {
+                lastVideoTime = video.currentTime;
+                const results = handLandmarker.detectForVideo(video, startTimeMs);
+                updateGestures(results.landmarks);
+            }
+            requestAnimationFrame(predictWebcam);
+        }
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        document.getElementById('btn-upload').addEventListener('click', () => { document.getElementById('file-input').click(); audioSynth.init(); });
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            if(e.target.files) Array.from(e.target.files).forEach(file => { const reader = new FileReader(); reader.onload = (evt) => addPhoto(evt.target.result); reader.readAsDataURL(file); });
+        });
+        const musicBtn = document.getElementById('btn-music');
+        musicBtn.addEventListener('click', () => {
+            const playing = audioSynth.toggle(); musicBtn.querySelector('span').textContent = playing ? '🎵' : '🔇'; musicBtn.style.borderColor = playing ? '#ff69b4' : 'rgba(255,255,255,0.3)';
+        });
+        document.body.addEventListener('click', () => { audioSynth.init(); }, {once:true});
+
+        initScene();
+        createStar();
+        createFoliage();
+        createOrnaments();
+        createSnow();
+        setupMediaPipe();
+        render();
+    </script>
+</body>
+</html>
