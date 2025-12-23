@@ -10,12 +10,10 @@
     
     <style>
         /* --- UI/UX Styles (基础样式) --- */
-        /* 增加了中文常用字体适配 */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: radial-gradient(circle at center, #1f101b 0%, #000000 100%); font-family: 'Cinzel', 'Microsoft YaHei', 'PingFang SC', serif; user-select: none; }
         #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
         
         #header { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 10; pointer-events: none; transition: all 0.3s ease; }
-        /* 标题仍保留艺术字体，也可以改中文，但Great Vibes不支持中文，所以此处保留英文或用系统字体 */
         #header h1 { font-family: 'Great Vibes', cursive; font-size: 5rem; color: #ffdae0; margin: 0; text-shadow: 0 0 20px #ffdae0, 0 0 40px #ff69b4; animation: pulseGlow 3s infinite alternate; transition: font-size 0.3s ease; }
         @keyframes pulseGlow { from { text-shadow: 0 0 10px #ffdae0, 0 0 20px #ff69b4; opacity: 0.9; } to { text-shadow: 0 0 30px #ffdae0, 0 0 60px #ff69b4; opacity: 1; } }
         
@@ -41,48 +39,49 @@
         #loader p { color: #ffdae0; margin-top: 20px; letter-spacing: 2px; animation: pulse 1.5s infinite; font-size: 14px; }
         #file-input { display: none; }
 
-        /* --- 📱 手机端适配 (Mobile Responsive Fix) --- */
+        /* --- 📱 手机端适配 (更小巧的版本) --- */
         @media (max-width: 768px) {
             #header { top: 15px; }
-            #header h1 { font-size: 2.2rem; }
+            #header h1 { font-size: 2.0rem; }
 
-            /* 侧边栏优化：更紧凑 */
+            /* 右侧菜单：变得更紧凑 */
             #gesture-sidebar {
                 width: auto;
-                min-width: 120px;
-                padding: 10px;
-                right: 10px;
+                min-width: 100px;
+                padding: 8px;
+                right: 5px;
                 background: rgba(20, 10, 20, 0.6);
             }
-            .gesture-item { padding: 6px; margin-bottom: 5px; }
-            .gesture-icon { font-size: 18px; margin-right: 8px; width: 20px; }
-            .gesture-text h3 { font-size: 12px; }
-            .gesture-text p { display: none; /* 手机端隐藏详细描述 */ }
+            .gesture-item { padding: 4px; margin-bottom: 4px; }
+            .gesture-icon { font-size: 16px; margin-right: 5px; width: 18px; }
+            .gesture-text h3 { font-size: 11px; }
+            .gesture-text p { display: none; }
 
+            /* 左下角摄像头框：显著缩小 */
             #webcam-wrapper {
-                width: 100px;
-                height: 75px;
-                bottom: 90px;
+                width: 72px;  
+                height: 54px; 
+                bottom: 85px;
                 left: 10px;
                 border-width: 1px;
+                border-radius: 6px;
             }
-            #gesture-label { font-size: 10px; padding: 2px 0; }
+            #gesture-label { font-size: 8px; padding: 1px 0; }
 
+            /* 底部按钮 */
             #controls {
-                bottom: 20px;
-                width: 95%;
-                gap: 8px;
+                bottom: 15px;
+                width: 98%;
+                gap: 5px;
             }
             .btn {
-                padding: 8px 14px;
-                font-size: 12px;
-                white-space: nowrap;
+                padding: 6px 12px;
+                font-size: 11px;
             }
             .btn-circle {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
-                flex-shrink: 0;
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
             }
         }
     </style>
@@ -104,7 +103,8 @@
     </div>
 
     <div id="header">
-        <h1>Merry Christmas</h1> </div>
+        <h1>Merry Christmas</h1>
+    </div>
 
     <div id="webcam-wrapper">
         <video id="webcam" autoplay playsinline></video>
@@ -484,8 +484,14 @@
 
         function addPhoto(imgUrl) {
             const texture = new THREE.TextureLoader().load(imgUrl);
-            const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, color: 0xdddddd });
-            const geometry = new THREE.PlaneGeometry(3, 4); 
+            texture.colorSpace = THREE.SRGBColorSpace; // 关键修复：使用sRGB颜色空间，还原图片真实色彩
+            
+            // 修复：改用纯白色(0xffffff)以保留原色，不再使用灰色(0xdddddd)滤镜
+            const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, color: 0xffffff });
+            
+            // 修复：减小几何体初始大小 (从3x4 改为 1.5x2)，防止图片显得过大
+            const geometry = new THREE.PlaneGeometry(1.5, 2); 
+            
             const mesh = new THREE.Mesh(geometry, mat);
             const normalizedH = Math.random() * 0.8 + 0.1; 
             const h = normalizedH * TREE_HEIGHT;
@@ -622,11 +628,15 @@
                 if (p === pinchTarget) {
                     const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
                     targetPos = camera.position.clone().add(camDir.multiplyScalar(12));
-                    p.lookAt(camera.position); targetScale = new THREE.Vector3(3, 3, 3);
+                    p.lookAt(camera.position); 
+                    // 修复：从之前的放大3倍(3,3,3)改为放大1.2倍(1.2, 1.2, 1.2)，防止占满全屏
+                    targetScale = new THREE.Vector3(1.2, 1.2, 1.2);
                 } else if (isVictory && index === activePhotoIndex) {
                     const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
                     targetPos = camera.position.clone().add(camDir.multiplyScalar(12));
-                    p.lookAt(camera.position); targetScale = new THREE.Vector3(3, 3, 3);
+                    p.lookAt(camera.position); 
+                    // 修复：同上
+                    targetScale = new THREE.Vector3(1.2, 1.2, 1.2);
                 } else {
                     let baseTarget = isScatter ? p.userData.scatterPos : p.userData.treePos;
                     if (!isScatter) {
